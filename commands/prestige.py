@@ -3,7 +3,6 @@ from game.utils import fmt, to_roman
 from db.queries import (
     get_player,
     create_player,
-    update_player_resources,
     delete_batch,
 )
 from game.locations import LOCATIONS, get_location_index
@@ -34,6 +33,7 @@ def register(bot, GUILD_ID):
         current_index = get_location_index(player["location"])
         last_index = len(LOCATIONS) - 1
 
+        # Must reach final location
         if current_index < last_index:
             await ctx.respond(
                 "You must reach the final location to prestige.",
@@ -44,6 +44,7 @@ def register(bot, GUILD_ID):
         current_prestige = player["prestige_level"]
         required_xp = prestige_required_xp(current_prestige)
 
+        # Check XP requirement
         if player["current_xp"] < required_xp:
             missing = required_xp - player["current_xp"]
 
@@ -57,6 +58,8 @@ def register(bot, GUILD_ID):
         new_prestige = current_prestige + 1
 
         db = get_db()
+
+        # Reset core progress
         db.execute(
             """
             UPDATE players
@@ -73,12 +76,20 @@ def register(bot, GUILD_ID):
             """,
             ("Shed", new_prestige, user_id)
         )
-        
+
+        # 🔥 Reset exposure (heat)
+        db.execute(
+            "DELETE FROM exposure WHERE player_id = ?",
+            (user_id,)
+        )
+
         db.commit()
 
+        # Remove any active brew
         delete_batch(user_id)
 
-        bonus_pct = player["prestige_level"] * 5
+        # Correct bonus calculation (new prestige level)
+        bonus_pct = new_prestige * 5
 
         await ctx.respond(
             f"{ctx.author.mention}\n"
@@ -86,6 +97,7 @@ def register(bot, GUILD_ID):
             f"Prestige Level: {to_roman(new_prestige)}\n"
             f"Brewing Speed Bonus: +{bonus_pct}%\n"
             f"XP Requirement Scaling: +5% per prestige level\n\n"
+            f"All heat cleared.\n"
             f"Progress reset to Shed.\n"
             f"Starting cash: €500"
-)
+        )

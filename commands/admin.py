@@ -21,10 +21,10 @@ def register(bot, GUILD_ID):
     # -------------------------
 
     async def add_remove_autocomplete(ctx: discord.AutocompleteContext):
-        return ["cash", "xp", "sugar", "yeast"]
+        return ["cash", "xp", "sugar", "yeast", "moonshine"]
 
     async def set_autocomplete(ctx: discord.AutocompleteContext):
-        return ["prestige", "location", "xp", "cash"]
+        return ["cash", "xp", "sugar", "yeast", "moonshine"]
 
     admin = bot.create_group(
         "admin",
@@ -67,6 +67,9 @@ def register(bot, GUILD_ID):
         elif field == "yeast":
             update_player_resources(target.id, yeast_delta=amount)
 
+        elif field == "moonshine":
+            update_player_resources(target.id, moonshine_delta=amount)
+
         else:
             await ctx.respond("Invalid field.", ephemeral=True)
             return
@@ -107,6 +110,9 @@ def register(bot, GUILD_ID):
 
         elif field == "yeast":
             update_player_resources(target.id, yeast_delta=-amount)
+
+        elif field == "moonshine":
+            update_player_resources(target.id, moonshine_delta=-amount)
 
         else:
             await ctx.respond("Invalid field.", ephemeral=True)
@@ -164,6 +170,13 @@ def register(bot, GUILD_ID):
                 "UPDATE players SET cash = ? WHERE user_id = ?",
                 (value, target.id)
             )
+
+        elif field == "moonshine":
+            db.execute(
+                "UPDATE players SET moonshine = ? WHERE user_id = ?",
+                (value, target.id)
+            )
+
 
         else:
             await ctx.respond("Invalid field.", ephemeral=True)

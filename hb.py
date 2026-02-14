@@ -21,7 +21,7 @@ from commands.profile import register as register_profile
 from commands.resell import register as register_resell
 from commands.protection import register as register_protection
 from commands.help import register as register_help
-
+from commands.market import register as register_market
 
 # --- Load environment ---
 load_dotenv()
@@ -54,7 +54,7 @@ register_leaderboard(bot, GUILD_ID)
 register_profile(bot, GUILD_ID)
 register_protection(bot, GUILD_ID)
 register_help(bot, GUILD_ID)
-
+register_market(bot, GUILD_ID)
 
 @bot.event
 async def on_ready():

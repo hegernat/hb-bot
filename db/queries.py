@@ -190,3 +190,26 @@ def get_global_rank(user_id: int):
 def get_all_active_batches():
     db = get_db()
     return db.execute("SELECT * FROM batches").fetchall()
+
+def get_exposure(player_id: int, hour: int):
+    db = get_db()
+    row = db.execute(
+        "SELECT exposure FROM exposure WHERE player_id = ? AND hour = ?",
+        (player_id, hour)
+    ).fetchone()
+
+    return row["exposure"] if row else 0
+
+
+def set_exposure(player_id: int, hour: int, exposure: int):
+    db = get_db()
+    db.execute(
+        """
+        INSERT INTO exposure (player_id, hour, exposure)
+        VALUES (?, ?, ?)
+        ON CONFLICT(player_id, hour)
+        DO UPDATE SET exposure = excluded.exposure
+        """,
+        (player_id, hour, exposure)
+    )
+    db.commit()

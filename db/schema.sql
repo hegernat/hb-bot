@@ -40,3 +40,10 @@ CREATE TABLE IF NOT EXISTS protections (
 
     FOREIGN KEY (user_id) REFERENCES players(user_id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS exposure (
+    player_id INTEGER,
+    hour INTEGER,
+    exposure INTEGER,
+    PRIMARY KEY (player_id, hour)
+);

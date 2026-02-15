@@ -17,7 +17,6 @@ from db.queries import (
     set_prestige_notified,
 )
 
-
 def register(bot):
 
     # -------------------------------------------------
@@ -144,7 +143,7 @@ def register(bot):
             moonshine_delta=-volume,
             cash_delta=final_revenue,
         )
-        xp_rate = 0.5
+        xp_rate = 1.0
         xp_gained = int(final_revenue * xp_rate)
 
         add_xp(user_id, xp_gained)

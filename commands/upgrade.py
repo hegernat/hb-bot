@@ -8,7 +8,6 @@ from game.brewing import resolve_batch_if_needed
 def register(bot):
 
     @bot.slash_command(
-        guild_ids=[GUILD_ID],
         name="upgrade",
         description="Upgrade your location"
     )

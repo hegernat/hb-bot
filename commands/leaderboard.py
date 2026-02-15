@@ -4,7 +4,7 @@ from game.utils import format_time
 from db.queries import get_top_players
 from game.utils import to_roman
 
-def register(bot, GUILD_ID):
+def register(bot):
 
     @bot.slash_command(
         name="leaderboard",

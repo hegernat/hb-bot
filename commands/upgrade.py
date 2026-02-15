@@ -5,7 +5,7 @@ from db.queries import get_player, create_player, update_player_resources
 from game.locations import LOCATIONS, get_location_index
 from game.brewing import resolve_batch_if_needed
 
-def register(bot, GUILD_ID):
+def register(bot):
 
     @bot.slash_command(
         guild_ids=[GUILD_ID],
@@ -91,4 +91,3 @@ def register(bot, GUILD_ID):
             f"<@{user_id}> \nLocation upgraded!\n"
             f"{current_loc['name']} → **{next_loc['name']}**\n\n"
         )
-        await ctx.respond("Upgrade works")

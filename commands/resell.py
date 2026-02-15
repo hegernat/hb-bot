@@ -5,7 +5,7 @@ from db.queries import get_player, create_player, update_player_resources
 SUGAR_PRICE = 1
 YEAST_PRICE = 2
 
-def register(bot, GUILD_ID):
+def register(bot):
 
     # -------------------------
     # AUTOCOMPLETE

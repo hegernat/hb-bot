@@ -16,7 +16,7 @@ def prestige_required_xp(level: int) -> int:
     return int(PRESTIGE_BASE_XP * (1 + 0.05 * level))
 
 
-def register(bot, GUILD_ID):
+def register(bot):
 
     @bot.slash_command(
         name="prestige",

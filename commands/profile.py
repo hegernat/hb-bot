@@ -9,7 +9,7 @@ from db.queries import (
     get_global_rank,
 )
 
-def register(bot, GUILD_ID):
+def register(bot):
 
     @bot.slash_command(
         name="profile",

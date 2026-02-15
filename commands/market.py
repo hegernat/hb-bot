@@ -6,8 +6,7 @@ from game.locations import LOCATIONS, get_location_index
 from game.market import generate_market
 from game.utils import fmt
 
-
-def register(bot, GUILD_ID):
+def register(bot):
 
     @bot.slash_command(
         name="market",
@@ -51,7 +50,7 @@ def register(bot, GUILD_ID):
         elif heat_percent < 100:
             heat_status = "High Risk"
         else:
-            heat_status = "CRACKDOWN IMMINENT!!!"
+            heat_status = "WANTED!"
 
         # Clamp for display only
         display_percent = min(heat_percent, 100)
@@ -68,16 +67,10 @@ def register(bot, GUILD_ID):
             title="HB — Current Market",
             color=discord.Color.gold()
         )
-
-        embed.add_field(
-            name="Location",
-            value=player["location"],
-            inline=False
-        )
         
         embed.add_field(
             name="Heat Level",
-            value=f"**{heat_status}**\n{heat_bar} {display_percent}%{'+' if heat_percent > 100 else ''}",
+            value=f"{heat_status}\n{heat_bar} {display_percent}%{'+' if heat_percent > 100 else ''}\n\n",
             inline=False
         )
 

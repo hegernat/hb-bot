@@ -14,17 +14,17 @@ def is_owner(ctx):
     return ctx.author.id == ctx.guild.owner_id
 
 
-def register(bot, GUILD_ID):
+def register(bot):
 
     # -------------------------
     # AUTOCOMPLETE FUNCTIONS
     # -------------------------
 
     async def add_remove_autocomplete(ctx: discord.AutocompleteContext):
-        return ["cash", "xp", "sugar", "yeast", "moonshine"]
+        return ["cash", "xp", "sugar", "yeast", "liquor"]
 
     async def set_autocomplete(ctx: discord.AutocompleteContext):
-        return ["cash", "xp", "sugar", "yeast", "moonshine"]
+        return ["cash", "xp", "sugar", "yeast", "liquor"]
 
     admin = bot.create_group(
         "admin",
@@ -67,7 +67,7 @@ def register(bot, GUILD_ID):
         elif field == "yeast":
             update_player_resources(target.id, yeast_delta=amount)
 
-        elif field == "moonshine":
+        elif field == "liquor":
             update_player_resources(target.id, moonshine_delta=amount)
 
         else:
@@ -111,7 +111,7 @@ def register(bot, GUILD_ID):
         elif field == "yeast":
             update_player_resources(target.id, yeast_delta=-amount)
 
-        elif field == "moonshine":
+        elif field == "liquor":
             update_player_resources(target.id, moonshine_delta=-amount)
 
         else:
@@ -171,7 +171,7 @@ def register(bot, GUILD_ID):
                 (value, target.id)
             )
 
-        elif field == "moonshine":
+        elif field == "liquor":
             db.execute(
                 "UPDATE players SET moonshine = ? WHERE user_id = ?",
                 (value, target.id)

@@ -14,7 +14,7 @@ PRICES = {
 }
 
 
-def register(bot, GUILD_ID):
+def register(bot):
 
     @bot.slash_command(
         name="buy",

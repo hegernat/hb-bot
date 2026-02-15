@@ -1,10 +1,6 @@
+import discord
 import time
 import random
-import discord
-from game.utils import fmt
-from game.utils import format_time
-from game.brewing import resolve_batch_if_needed
-from game.locations import LOCATIONS, get_location_index
 
 from db.queries import (
     get_player,
@@ -14,19 +10,30 @@ from db.queries import (
     create_batch,
 )
 
+from game.brewing import resolve_batch_if_needed
+from game.locations import LOCATIONS, get_location_index
+from game.utils import fmt, format_time
+
+# Brewing ratios
 RATIO_SUGAR = 5
 RATIO_YEAST = 1
+BASE_MOLD_RISK = 0.15
 
-BASE_MOLD_RISK = 0.03  # 3 % baseline
 
-def register(bot, GUILD_ID):
+def register(bot):
 
     @bot.slash_command(
         name="brew",
-        description="Start brewing liqour"
+        description="Start brewing liquor"
     )
-    async def brew(ctx: discord.ApplicationContext):
-
+    async def brew(
+        ctx: discord.ApplicationContext,
+        amount: discord.Option(
+            str,
+            "Amount in liters or 'all'",
+            required=False
+        ) = None,
+    ):
 
         user_id = ctx.author.id
         now = int(time.time())
@@ -37,9 +44,8 @@ def register(bot, GUILD_ID):
             create_player(user_id)
             player = get_player(user_id)
 
+        # resolve finished batch first
         result = resolve_batch_if_needed(user_id)
-        batch = get_active_batch(user_id)
-
         if result:
             if result["type"] == "complete":
                 gained = result["liters"]
@@ -59,96 +65,134 @@ def register(bot, GUILD_ID):
 
             elif result["type"] == "mold":
                 await ctx.respond(
-                    f"{ctx.author.mention}\n"
-                    f"Brew failed due to mold."
+                    f"{ctx.author.mention}\nBrew failed due to mold."
                 )
                 return
 
-        # reload player after resolve
         player = get_player(user_id)
-        current_moonshine = player["moonshine"] or 0
-        location_index = get_location_index(player["location"])
-        location = LOCATIONS[location_index]
-        max_storage = location["max_storage"]
 
-        # --- check existing batch ---
+        # --- check active batch ---
         batch = get_active_batch(user_id)
         if batch:
             remaining = max(0, batch["end_time"] - now)
-            time_str = format_time(remaining)
-
             await ctx.respond(
                 f"{ctx.author.mention}\nYou're already brewing.\n"
-                f"Batch completes in **{time_str}**."
+                f"Batch completes in **{format_time(remaining)}**."
             )
             return
 
+        # --- storage info ---
+        current_moonshine = player["moonshine"] or 0
+        location_index = get_location_index(player["location"])
+        max_storage = LOCATIONS[location_index]["max_storage"]
+
         if current_moonshine >= max_storage:
             await ctx.respond(
-                f"{ctx.author.mention}\n"
-                f"Your storage is full.\n"
-                f"Liquor: {current_moonshine}/{max_storage}\n"
-                f"Sell or upgrade location before brewing again.",
+                f"{ctx.author.mention}\nStorage is full.",
                 ephemeral=True
             )
             return
 
+        remaining_capacity = max_storage - current_moonshine
 
-        # --- calculate max possible batch ---
+        # --- ingredient limits ---
         max_by_sugar = player["sugar"] // RATIO_SUGAR
         max_by_yeast = player["yeast"] // RATIO_YEAST
-
         max_batches = min(max_by_sugar, max_by_yeast)
 
         if max_batches <= 0:
             await ctx.respond(
-                "You don't have enough ingredients to brew.",
+                "Not enough ingredients to brew.",
                 ephemeral=True
             )
             return
-            
-        liters = max_batches * RATIO_SUGAR   # 1 unit = 5 liters    
+
+        max_liters_by_ingredients = max_batches * RATIO_SUGAR
+
+        # --------------------------------------------------
+        # DETERMINE LITERS TO BREW
+        # --------------------------------------------------
+
+        if amount is None:
+            # default = brew max possible without overflow
+            target_liters = min(
+                remaining_capacity,
+                max_liters_by_ingredients
+            )
+
+        else:
+            amount = amount.lower().strip()
+
+            if amount == "all":
+                target_liters = min(
+                    remaining_capacity,
+                    max_liters_by_ingredients
+                )
+            else:
+                # support 5k
+                if amount.endswith("k"):
+                    try:
+                        target_liters = int(amount[:-1]) * 1000
+                    except ValueError:
+                        await ctx.respond(
+                            "Invalid amount format.",
+                            ephemeral=True
+                        )
+                        return
+                else:
+                    try:
+                        target_liters = int(amount)
+                    except ValueError:
+                        await ctx.respond(
+                            "Invalid amount.",
+                            ephemeral=True
+                        )
+                        return
+
+                if target_liters <= 0:
+                    await ctx.respond(
+                        "Amount must be positive.",
+                        ephemeral=True
+                    )
+                    return
+
+                # cap by storage & ingredients
+                target_liters = min(
+                    target_liters,
+                    remaining_capacity,
+                    max_liters_by_ingredients
+                )
+
+        if target_liters <= 0:
+            await ctx.respond(
+                "Nothing to brew.",
+                ephemeral=True
+            )
+            return
+
+        # convert liters → batches
+        batches = target_liters // RATIO_SUGAR
+        liters = batches * RATIO_SUGAR
+
+        if liters <= 0:
+            await ctx.respond(
+                "Not enough ingredients for that amount.",
+                ephemeral=True
+            )
+            return
+
+        sugar_used = batches * RATIO_SUGAR
+        yeast_used = batches * RATIO_YEAST
 
         # --- prestige speed bonus ---
         prestige_level = player["prestige_level"] or 0
         speed_multiplier = 1 - (0.05 * prestige_level)
-
         duration = round(liters * speed_multiplier)
 
-        # --- block brew if batch would overflow storage ---
-        current_moonshine = player["moonshine"] or 0
-        location_index = get_location_index(player["location"])
-        location = LOCATIONS[location_index]
-        max_storage = location["max_storage"]
-
-        if current_moonshine + liters > max_storage:
-            space_left = max_storage - current_moonshine
-
-            await ctx.respond(
-                f"{ctx.author.mention}\n"
-                f"Not enough storage space.\n"
-                f"Storage: {fmt(current_moonshine)}/{fmt(max_storage)}L\n"
-                f"Free space: {fmt(space_left)}L\n"
-                f"Batch size: {fmt(liters)}L\n"
-                f"Sell moonshine or upgrade location.",
-                ephemeral=True
-            )
-            return
-
-
-        # säkerställ att vi inte går under 50% hastighet
-        sugar_used = max_batches * RATIO_SUGAR
-        yeast_used = max_batches * RATIO_YEAST
-
-        # --- mold risk calculation ---
+        # --- mold risk ---
         mold_tier = player["mold_protection"] or 0
-
-        # each tier reduces risk by 25%
         effective_risk = BASE_MOLD_RISK * (1 - mold_tier * 0.25)
-
-        # clamp safety
-        if effective_risk < 0:
-            effective_risk = 0
+        effective_risk = max(0, effective_risk)
 
         will_fail = random.random() < effective_risk
         fail_time = None
@@ -159,12 +203,7 @@ def register(bot, GUILD_ID):
         if will_fail and duration > 1:
             fail_time = random.randint(start_ts + 1, end_ts - 1)
 
-        current_moonshine = player["moonshine"] or 0
-        location_index = get_location_index(player["location"])
-        location = LOCATIONS[location_index]
-        max_storage = location["max_storage"]
-        
-        # --- consume ingredients ONLY NOW ---
+        # --- consume ingredients ---
         update_player_resources(
             user_id,
             sugar_delta=-sugar_used,
@@ -182,10 +221,8 @@ def register(bot, GUILD_ID):
             channel_id=ctx.channel.id
         )
 
-        time_str = format_time(duration)
-
         await ctx.respond(
             f"{ctx.author.mention}\n"
             f"Started brewing {fmt(liters)} liters\n"
-            f"Time remaining: {time_str}"
+            f"Time remaining: {format_time(duration)}"
         )

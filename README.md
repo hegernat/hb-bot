@@ -1,54 +1,75 @@
-# HB
+# HB-bot
 
-HB is a Discord economy game where players produce moonshine, manage risk, upgrade locations, and prestige for long-term scaling bonuses.
+HB-bot is a Discord-based economy game where players produce moonshine, manage operational risk, scale locations, and prestige for long-term progression.
 
-The game focuses on progression, risk management, and competitive global rankings.
-
----
-
-## Features
-
-- Location-based production scaling  
-- Storage limits per location  
-- Mold mechanic (early-game pressure)  
-- Raid mechanic (late-game pressure)  
-- Protection system (max tier 3)  
-- Prestige system with scaling XP requirements  
-- Global leaderboard  
-- Background batch resolution  
-- Automatic number formatting (k / m / b)  
+The game emphasizes:
+- Risk vs reward
+- Heat management
+- Scaling production
+- Competitive XP progression
 
 ---
 
-## Game Mechanics
+## Core Systems
 
 ### Brewing
 
-- 1 yeast : 5 sugar ratio  
-- Brew time = liters (seconds)  
-- Prestige reduces brew time by 5% per level  
-- Hard storage cap enforced  
-- Overflow is lost and reported  
+- 5 sugar + 1 yeast = 1 liter
+- Brew time = 1 second per liter
+- Prestige reduces brew time by 5% per level
+- `/brew all` fills remaining storage automatically
+- Storage caps are enforced per location
+
+---
 
 ### Mold
 
-- Can destroy a batch  
-- Minimum 15% refund  
-- Mold protection reduces chance and increases refund  
+- Each batch has a base mold risk
+- Mold protection reduces failure chance
+- If mold occurs:
+  - Partial refund based on remaining time
+  - Minimum refund 15%
+  - +5% minimum refund per mold tier
+
+---
+
+### Market & Heat
+
+- Market refreshes every hour
+- 3 buyers per location
+- Buyers vary in:
+  - Volume range
+  - Price per liter
+  - Base raid risk (varies hourly)
+
+- Selling increases Heat
+- Higher Heat increases raid probability
+- Heat resets every hour and on prestige
+
+---
 
 ### Raids
 
-- Triggered on sell  
-- Risk scales with prestige  
-- Raid protection reduces risk  
+- Raid chance scales with:
+  - Buyer base risk
+  - Current heat level
+  - Player XP scaling
+
+- Raid protection reduces money lost (not raid chance)
+- XP gained is based on actual money received after raid
+
+---
 
 ### Prestige
 
-- Resets progression to Shed  
-- Resets cash to €500  
-- Increases brewing speed  
-- Increases XP requirement by 5% per level  
-- Total XP is preserved  
+- Requires final location + required XP
+- Resets:
+  - Inventory
+  - Cash (to €500)
+  - Protection
+  - Heat
+- Grants +5% permanent brewing speed per level
+- XP requirement increases 5% per prestige level
 
 ---
 
@@ -71,7 +92,6 @@ Create a `.env` file in the project root:
 
 ```
 DISCORD_TOKEN=your_token_here
-GUILD_ID=your_server_id_here
 ```
 
 Run the bot:
@@ -82,13 +102,13 @@ python hb.py
 
 ---
 
-## Project Structure
+## Architecture
 
 ```
-commands/       Slash commands  
-db/             Database + queries  
-game/           Core mechanics  
-hb.py           Entry point  
+commands/   Slash commands
+db/         Database & queries
+game/       Core game logic
+hb.py       Entry point
 requirements.txt  
 ```
 
@@ -98,15 +118,19 @@ requirements.txt
 
 - Database file (`*.sqlite`) is auto-generated on first run.  
 - `.env`, `.venv`, and database files are excluded from version control.  
-- Guild commands are registered at startup.  
+- Global slash commands may take up to 1 hour to propagate after first deploy.  
+- The economy is global across all servers by default (shared player progression).
+- Heat resets every hour and on prestige.  
+- Protection reduces financial loss, not raid probability.  
 
 ---
 
 ## Future Improvements
 
-- Paginated leaderboard  
-- Multi-guild support  
-- Economy balancing tuning  
-- Web dashboard  
-- Seasonal resets  
-
+- Dynamic price-risk correlation  
+- Event-based modifiers  
+- Server-scoped economy mode (optional multi-guild isolation)  
+- UI polish for market and sell feedback  
+- Anti-spam safeguards on high-frequency commands  
+- Expanded buyer identities and visual assets  
+- Seasonal prestige ladder or leaderboard reset mode  

@@ -4,10 +4,11 @@ from game.utils import fmt
 from game.utils import format_time
 from game.utils import to_roman
 from db.queries import get_player, create_player, get_active_batch
+from db.queries import get_exposure
 from game.brewing import resolve_batch_if_needed
 from game.locations import LOCATIONS, get_location_index
 
-def register(bot, GUILD_ID):
+def register(bot):
 
     @bot.slash_command(
         name="inventory",
@@ -37,6 +38,36 @@ def register(bot, GUILD_ID):
             create_player(user_id)
             player = get_player(user_id)
 
+        # -------------------------------------------------
+        # Heat Calculation
+        # -------------------------------------------------
+        location_index = get_location_index(player["location"])
+        max_storage = LOCATIONS[location_index]["max_storage"]
+
+        current_hour = int(time.time() // 3600)
+        exposure = get_exposure(user_id, current_hour)
+
+        heat_ratio = exposure / max_storage if max_storage > 0 else 0
+        heat_percent = int(heat_ratio * 100)
+
+        if heat_percent < 25:
+            heat_status = "Low Profile"
+        elif heat_percent < 50:
+            heat_status = "Warming Up"
+        elif heat_percent < 75:
+            heat_status = "Police Attention Rising"
+        elif heat_percent < 100:
+            heat_status = "High Risk"
+        else:
+            heat_status = "WANTED!"
+
+        display_percent = min(heat_percent, 100)
+
+        bar_length = 10
+        filled = int(min(heat_ratio, 1) * bar_length)
+        heat_bar = "█" * filled + "░" * (bar_length - filled)
+
+
         loc_index = get_location_index(player["location"])
         location = LOCATIONS[loc_index]
 
@@ -60,6 +91,12 @@ def register(bot, GUILD_ID):
             name="Cash",
             value=f"€{fmt(player['cash'])}",
             inline=True
+        )
+        # --- Heat level ---
+        embed.add_field(
+            name="Heat Level",
+            value=f"{heat_status}\n{heat_bar} {display_percent}%{'+' if heat_percent > 100 else ''}",
+            inline=False
         )
 
         # --- Ingredients ---

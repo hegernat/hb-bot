@@ -21,8 +21,8 @@ def next_cost(tier: int, player) -> int:
         location_multiplier *
         prestige_multiplier
     )
-
-def register(bot, GUILD_ID):
+    
+def register(bot):
 
     async def kind_autocomplete(ctx: discord.AutocompleteContext):
         return ["mold", "raid"]

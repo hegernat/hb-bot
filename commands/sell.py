@@ -18,7 +18,7 @@ from db.queries import (
 )
 
 
-def register(bot, GUILD_ID):
+def register(bot):
 
     # -------------------------------------------------
     # AUTOCOMPLETE FUNCTION
@@ -53,9 +53,9 @@ def register(bot, GUILD_ID):
             int,
             "Select buyer",
             choices=[
-                discord.OptionChoice("1 — HIV Rico", 1),
-                discord.OptionChoice("2 — Drunk Daren", 2),
-                discord.OptionChoice("3 — Syndicate Sam", 3),
+                discord.OptionChoice("#1 — Jari Jinxu", 1),
+                discord.OptionChoice("#2 — Sergei Bogdanov", 2),
+                discord.OptionChoice("#3 — Ezra Goldstein", 3),
             ],
         ),
     ):
@@ -83,7 +83,7 @@ def register(bot, GUILD_ID):
 
         stored = player["moonshine"]
         if stored <= 0:
-            await ctx.respond("You have no moonshine to sell.", ephemeral=True)
+            await ctx.respond("You have no liquor to sell.", ephemeral=True)
             return
 
         location_index = get_location_index(player["location"])
@@ -109,7 +109,6 @@ def register(bot, GUILD_ID):
         price_multiplier = 1 + 0.06 * (xp_ratio ** 0.5)
 
         gross_revenue = int(volume * selected["price_per_liter"] * price_multiplier)
-        xp_gained = volume * 10
 
         # Raid logic
         current_hour = int(time.time() // 3600)
@@ -145,6 +144,8 @@ def register(bot, GUILD_ID):
             moonshine_delta=-volume,
             cash_delta=final_revenue,
         )
+        xp_rate = 0.5
+        xp_gained = int(final_revenue * xp_rate)
 
         add_xp(user_id, xp_gained)
 
@@ -154,7 +155,7 @@ def register(bot, GUILD_ID):
         if raid_triggered:
             await ctx.respond(
                 f"**POLICE RAID!**\n\n"
-                f"Deal with **{selected['name']}** intercepted.\n\n"
+                f"Deal with **{selected['name']}** was intercepted.\n\n"
                 f"Sold: {fmt(volume)} L\n"
                 f"Cash: €{fmt(final_revenue)} (of €{fmt(gross_revenue)})\n"
                 f"XP gain: {fmt(xp_gained)}"
@@ -171,6 +172,6 @@ def register(bot, GUILD_ID):
 
         if is_prestige_eligible(player) and not player["notified_prestige"]:
             await ctx.followup.send(
-                "You are eligible for **PRESTIGE**! Use `/prestige`."
+                "You are eligible for **PRESTIGE**! Use `/prestige`.\nPlease note that this will reset your current XP, cash and location etc."
             )
             set_prestige_notified(user_id)
